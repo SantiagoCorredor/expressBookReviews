@@ -56,6 +56,31 @@ regd_users.put("/auth/review/:isbn", async (req, res) => {
   const { rating, comment } = req.body;
   const { isbn } = req.params;  // `isbn` en este caso es el ID del libro
   const username = req.user.username; // Extraemos el username del token
+  try {
+    // Verificar que el libro existe utilizando el ID
+    const book = books[isbn]; // Acceder al libro directamente por su ID
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
+    }
+    // Crear la reseña
+    const newReview = {
+      user: username,
+      rating,
+      comment,
+      createdAt: new Date(),
+    };
+    // Agregar la reseña al libro
+    book.reviews[username] = newReview; // Agregamos la reseña usando el nombre de usuario como clave
+    return res.status(200).json({ message: "Review added successfully" });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error adding review" });
+  }
+});
+
+regd_users.delete("/auth/review/:isbn", async (req, res) => {
+  const { isbn } = req.params;  // Obtener el ID del libro de los parámetros
+  const username = req.user.username; // Extraemos el username del token
 
   try {
     // Verificar que el libro existe utilizando el ID
@@ -65,24 +90,20 @@ regd_users.put("/auth/review/:isbn", async (req, res) => {
       return res.status(404).json({ message: "Book not found" });
     }
 
-    // Crear la reseña
-    const newReview = {
-      user: username,
-      rating,
-      comment,
-      createdAt: new Date(),
-    };
+    // Verificar si el usuario ha dejado una reseña
+    if (!book.reviews[username]) {
+      return res.status(404).json({ message: "Review not found" });
+    }
 
-    // Agregar la reseña al libro
-    book.reviews[username] = newReview; // Agregamos la reseña usando el nombre de usuario como clave
+    // Eliminar la reseña del libro
+    delete book.reviews[username]; // Usar `delete` para quitar la reseña
 
-    return res.status(200).json({ message: "Review added successfully" });
+    return res.status(200).json({ message: "Review deleted successfully" });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Error adding review" });
+    return res.status(500).json({ message: "Error deleting review" });
   }
 });
-
 
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;

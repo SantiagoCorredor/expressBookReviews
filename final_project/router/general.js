@@ -29,70 +29,110 @@ public_users.post("/register", (req,res) => {
 });
 
 // Get the book list available in the shop
-public_users.get('/',function (req, res) {
-  //Write your code here
-  res.send(JSON.stringify(books,null,3));
+public_users.get('/', async function (req, res) {
+  try {
+    // Simulamos una operación asíncrona, como podría ser una consulta a una base de datos
+    const allBooks = await new Promise((resolve) => {
+      resolve(books);
+    });
+
+    // Envía la respuesta con los libros
+    res.send(JSON.stringify(allBooks, null, 3));
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Error retrieving books" });
+  }
 });
 
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
-  const isbn = req.params.isbn;  // Use isbn for consistency
+public_users.get('/isbn/:isbn', async function (req, res) {
+  const isbn = req.params.isbn;  // Usar isbn para consistencia
 
-  // Check if ISBN exists in the books object
-  if (books.hasOwnProperty(isbn)) {
-    res.send(books[isbn]);
-  } else {
-    res.status(404).send({ message: 'Book not found for ISBN: ' + isbn });
+  try {
+    // Simulamos una operación asíncrona con una promesa
+    const book = await new Promise((resolve, reject) => {
+      if (books.hasOwnProperty(isbn)) {
+        resolve(books[isbn]);
+      } else {
+        reject({ message: 'Book not found for ISBN: ' + isbn });
+      }
+    });
+
+    // Enviar la respuesta con el libro encontrado
+    res.send(book);
+  } catch (error) {
+    // Manejar el error si no se encuentra el libro
+    res.status(404).send(error);
   }
- });
+});
+
   
 // Get book details based on author
-public_users.get('/author/:author',function (req, res) {
+public_users.get('/author/:author', async function (req, res) {
   const author = req.params.author;
+  try {
+    const matchingBooks = await new Promise((resolve) => {
+      let booksByAuthor = [];
 
-  // Iterate through the book objects
-  let matchingBooks = [];
-  for (const isbn in books) {
-    if (books.hasOwnProperty(isbn)) {
-      const book = books[isbn];
-      if (book.author.toLowerCase() === author.toLowerCase())   
- {
-        matchingBooks.push(book);
+      for (const isbn in books) {
+        if (books.hasOwnProperty(isbn)) {
+          const book = books[isbn];
+          // Check if the author's name matches (case insensitive)
+          if (book.author.toLowerCase() === author.toLowerCase()) {
+            booksByAuthor.push(book); // Add matching book to the array
+          }
+        }
       }
+      // Resolve the Promise with the matching books
+      resolve(booksByAuthor);
+    });
+    // Send the matching books as a response
+    if (matchingBooks.length > 0) {
+      res.send(matchingBooks);
+    } else {
+      // If no books are found, send a 404 status
+      res.status(404).send({ message: 'No books found for author: ' + author });
     }
-  }
-
-  // Check if any books found for the author
-  if (matchingBooks.length > 0) {
-    res.send(matchingBooks);
-  } else {
-    res.status(404).send({ message: 'No books found for author: ' + author });
+  } catch (error) {
+    // Handle any unexpected errors
+    console.error(error);
+    res.status(500).send({ message: 'Error retrieving books' });
   }
 });
+
 
 // Get all books based on title
-public_users.get('/title/:title',function (req, res) {
+public_users.get('/title/:title', async function (req, res) {
   const title = req.params.title;
-
-  // Iterate through the book objects
-  let matchingBooks = [];
-  for (const isbn in books) {
-    if (books.hasOwnProperty(isbn)) {
-      const book = books[isbn];
-      if (book.title.toLowerCase() === title.toLowerCase())   
- {
-        matchingBooks.push(book);
+  try {
+    const matchingBooks = await new Promise((resolve) => {
+      let booksByTitle = [];
+      for (const isbn in books) {
+        if (books.hasOwnProperty(isbn)) {
+          const book = books[isbn];
+          // Check if the book's title matches (case insensitive)
+          if (book.title.toLowerCase() === title.toLowerCase()) {
+            booksByTitle.push(book); // Add matching book to the array
+          }
+        }
       }
+      // Resolve the Promise with the matching books
+      resolve(booksByTitle);
+    });
+    // Send the matching books as a response
+    if (matchingBooks.length > 0) {
+      res.send(matchingBooks);
+    } else {
+      // If no books are found, send a 404 status
+      res.status(404).send({ message: 'No books found for title: ' + title });
     }
-  }
-
-  // Check if any books found for the title
-  if (matchingBooks.length > 0) {
-    res.send(matchingBooks);
-  } else {
-    res.status(404).send({ message: 'No books found for title: ' + title });
+  } catch (error) {
+    // Handle any unexpected errors
+    console.error(error);
+    res.status(500).send({ message: 'Error retrieving books' });
   }
 });
+
 
 //  Get book review
 public_users.get('/review/:isbn',function (req, res) {
